@@ -36,36 +36,48 @@ features = {
         "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"]
         }
 
-# Remove any rows with missing values for nominal features
-df_nominal = df[features["nominal"]]
-df_nominal_missing = np.array(df_nominal.isna()).any(axis = 1)
-df_nominal_missing_indices = np.where(df_nominal_missing)[0]
-df.drop(df_nominal_missing_indices, inplace = True)
-df_nominal.drop(df_nominal_missing_indices, inplace = True)
+#%%
 
-df_ordinal = df[features["ordinal"]]#.to_numpy()
-df_numerical = df[features["numerical"]]#.to_numpy()
+# Split into X and Y
+X = df[features["ordinal"] + features["nominal"] + features["numerical"]]
+X.drop(["Crash_Severity"], axis = 1, inplace = True)
+Y = df["Crash_Severity"]
+
+X_ordinal = X[features["ordinal"][:-1]]
+X_numerical = X[features["numerical"]]
+
+# Remove any rows with missing values for nominal features
+X_nominal = X[features["nominal"]]
+X_nominal_missing = np.array(X_nominal.isna()).any(axis = 1)
+X_nominal_missing_indices = np.where(X_nominal_missing)[0]
+X_ordinal.drop(X_nominal_missing_indices, inplace = True)
+X_numerical.drop(X_nominal_missing_indices, inplace = True)
+X_nominal.drop(X_nominal_missing_indices, inplace = True)
+Y.drop(X_nominal_missing_indices, inplace = True)
+del X_nominal_missing, X_nominal_missing_indices
 
 #%%
 # Ordinal encoding
 enc1 = OrdinalEncoder()
-df_ordinal_tr = enc1.fit_transform(df_ordinal)
+X_ordinal_tr = enc1.fit_transform(X_ordinal)
 
 #%%
 # One-hot encoding
 enc2 = OneHotEncoder()
-df_nominal_tr = enc2.fit_transform(df_nominal).toarray()
+X_nominal_tr = enc2.fit_transform(X_nominal).toarray()
 
 #%%
 # Numerical processing
 imp = SimpleImputer(strategy = "median")
-df_numerical = imp.fit_transform(df_numerical)
+X_numerical_imp = imp.fit_transform(X_numerical)
 sc = StandardScaler()
-df_numerical_tr = sc.fit_transform(df_numerical)
+X_numerical_tr = sc.fit_transform(X_numerical_imp)
 
 #%%
 
-df_tr = np.concatenate((df_numerical_tr, df_ordinal_tr, df_nominal_tr), axis = 1)
+# Concatenate all of the X arrays
+X_tr = np.concatenate((X_numerical_tr, X_ordinal_tr, X_nominal_tr), axis = 1)
+
 
 #%%
 
