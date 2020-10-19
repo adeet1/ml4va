@@ -18,8 +18,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-#%%
+np.random.seed(0)
 
 df0 = pd.read_csv("Virginia_Crashes.csv")
 
@@ -30,18 +32,22 @@ df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM",
 
 #%%
 
+# Filter the dataset to only contain crashes from the past two years
+indices = np.where(np.logical_or(df["CRASH_YEAR"] == 2019, df["CRASH_YEAR"] == 2020))[0]
+df_filt = df.iloc[indices, :]
+
+#%%
+
 features = {
         "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol", "Crash_Severity"],
         "nominal" : ["Weather_Condition", "First_Harmful_Event_of_Entire_C", "Collision_Type", "FAC", "FUN", "Light_Condition", "VDOT_District", "Ownership_Used", "Crash_Event_Type_Dsc", "Roadway_Surface_Cond"],
         "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"]
         }
 
-#%%
-
 # Split into X and Y
-X = df[features["ordinal"] + features["nominal"] + features["numerical"]]
+X = df_filt[features["ordinal"] + features["nominal"] + features["numerical"]]
 X.drop(["Crash_Severity"], axis = 1, inplace = True)
-Y = df["Crash_Severity"]
+Y = df_filt["Crash_Severity"]
 
 X_ordinal = X[features["ordinal"][:-1]]
 X_numerical = X[features["numerical"]]
@@ -78,6 +84,41 @@ X_numerical_tr = sc.fit_transform(X_numerical_imp)
 # Concatenate all of the X arrays
 X_tr = np.concatenate((X_numerical_tr, X_ordinal_tr, X_nominal_tr), axis = 1)
 
+X_train, X_test, Y_train, Y_test = train_test_split(X_tr, Y, test_size = 0.2, random_state = 0)
+
+from sklearn.decomposition import PCA
+pca = PCA().fit(X_train)
+pca_variances = np.cumsum(pca.explained_variance_ratio_)
+plt.figure()
+plt.plot(pca_variances)
+plt.xlabel('Number of Components')
+plt.ylabel('Variance (%)') # for each component
+plt.show()
+
+#%%
+
+pca = PCA(n_components = 63).fit(X_train)
+X_train_pca = pca.transform(X_train)
+X_test_pca = pca.transform(X_test)
+
+#%%
+model = SVC()
+model.fit(X_train_pca, Y_train)
+
+#%%
+Y_train_pred = model.predict(X_train_pca)
+
+#%%
+Y_test_pred = model.predict(X_test_pca)
+
+#%%
+
+metrics = {"Training Set": [accuracy_score(Y_train, Y_train), precision_score(Y_train, Y_train), recall_score(Y_train, Y_train), f1_score(Y_train, Y_train)], \
+           "Testing Set": [accuracy_score(Y_test, Y_test), precision_score(Y_test, Y_test), recall_score(Y_test, Y_test), f1_score(Y_test, Y_test)]}
+
+metrics = pd.DataFrame(metrics)
+metrics.index = ["Accuracy", "Precision", "Recall", "F1 Score"]
+print(metrics)
 
 #%%
 
