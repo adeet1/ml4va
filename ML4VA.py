@@ -33,14 +33,39 @@ df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM",
 features = {
         "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol", "Crash_Severity"],
         "nominal" : ["Weather_Condition", "First_Harmful_Event_of_Entire_C", "Collision_Type", "FAC", "FUN", "Light_Condition", "VDOT_District", "Ownership_Used", "Crash_Event_Type_Dsc", "Roadway_Surface_Cond"],
-        "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm", "Driverage"]
+        "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"]
         }
 
-pipeline_num = Pipeline([("imputer", SimpleImputer(strategy = "median")), ("scaler", StandardScaler())])
+# Remove any rows with missing values for nominal features
+df_nominal = df[features["nominal"]]
+df_nominal_missing = np.array(df_nominal.isna()).any(axis = 1)
+df_nominal_missing_indices = np.where(df_nominal_missing)[0]
+df.drop(df_nominal_missing_indices, inplace = True)
+df_nominal.drop(df_nominal_missing_indices, inplace = True)
 
-pipeline = ColumnTransformer([("numerical", pipeline_num, features["numerical"]), ("ordinal", OrdinalEncoder(), features["ordinal"]), ("nominal", OneHotEncoder(), features["nominal"])])
+df_ordinal = df[features["ordinal"]]#.to_numpy()
+df_numerical = df[features["numerical"]]#.to_numpy()
 
-df_tr = pipeline.fit_transform(df)
+#%%
+# Ordinal encoding
+enc1 = OrdinalEncoder()
+df_ordinal_tr = enc1.fit_transform(df_ordinal)
+
+#%%
+# One-hot encoding
+enc2 = OneHotEncoder()
+df_nominal_tr = enc2.fit_transform(df_nominal).toarray()
+
+#%%
+# Numerical processing
+imp = SimpleImputer(strategy = "median")
+df_numerical = imp.fit_transform(df_numerical)
+sc = StandardScaler()
+df_numerical_tr = sc.fit_transform(df_numerical)
+
+#%%
+
+df_tr = np.concatenate((df_numerical_tr, df_ordinal_tr, df_nominal_tr), axis = 1)
 
 #%%
 
