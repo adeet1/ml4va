@@ -118,7 +118,6 @@ del X_test_numerical_tr, X_test_ordinal_tr, X_test_nominal_tr
 del X_train, X_test, X, Y_train, Y_test, Y
 
 #%%
-
 from sklearn.decomposition import PCA
 pca = PCA()
 pca.fit(X_train_tr)
@@ -128,8 +127,6 @@ plt.plot(pca_variances)
 plt.xlabel('Number of Components')
 plt.ylabel('Variance (%)') # for each component
 plt.show()
-
-#%%
 
 n_pc = np.where(pca_variances >= 0.95)[0][0] + 1
 
@@ -146,13 +143,23 @@ Y_train_pred = model.predict(X_train_pca)
 Y_test_pred = model.predict(X_test_pca)
 
 #%%
+acc_train = accuracy_score(Y_train_tr, Y_train_pred)
+prec_train = precision_score(Y_train_tr, Y_train_pred, average = None)
+recall_train = recall_score(Y_train_tr, Y_train_pred, average = None)
+f1_train = f1_score(Y_train_tr, Y_train_pred, average = None)
 
-metrics_train = [accuracy_score(Y_train_tr, Y_train_pred), precision_score(Y_train_tr, Y_train_pred, average = None), recall_score(Y_train_tr, Y_train_pred, average = None), f1_score(Y_train_tr, Y_train_pred, average = None)]
-metrics_test = [accuracy_score(Y_test_tr, Y_test_pred), precision_score(Y_test_tr, Y_test_pred, average = None), recall_score(Y_test_tr, Y_test_pred, average = None), f1_score(Y_test_tr, Y_test_pred, average = None)]
+acc_test = accuracy_score(Y_test_tr, Y_test_pred)
+prec_test = precision_score(Y_test_tr, Y_test_pred, average = None)
+recall_test = recall_score(Y_test_tr, Y_test_pred, average = None)
+f1_test = f1_score(Y_test_tr, Y_test_pred, average = None)
+
+metrics_train = np.array([acc_train, prec_train[0], prec_train[1], prec_train[2], prec_train[3], prec_train[4], recall_train[0], recall_train[1], recall_train[2], recall_train[3], recall_train[4], f1_train[0], f1_train[1], f1_train[2], f1_train[3], f1_train[4]])
+
+metrics_test = np.array([acc_test, prec_test[0], prec_test[1], prec_test[2], prec_test[3], prec_test[4], recall_test[0], recall_test[1], recall_test[2], recall_test[3], recall_test[4], f1_test[0], f1_test[1], f1_test[2], f1_test[3], f1_test[4]])
 
 metrics = {"Training Set": metrics_train, "Testing Set": metrics_test}
 metrics = pd.DataFrame(metrics)
-metrics.index = ["Accuracy", "Precision", "Recall", "F1 Score"]
+metrics.index = ["Accuracy", "Precision (Class 0)", "Precision (Class 1)", "Precision (Class 2)", "Precision (Class 3)", "Precision (Class 4)", "Recall (Class 0)", "Recall (Class 1)", "Recall (Class 2)", "Recall (Class 3)", "Recall (Class 4)", "F1 Score (Class 0)", "F1 Score (Class 1)", "F1 Score (Class 2)", "F1 Score (Class 3)", "F1 Score (Class 4)"]
 print(metrics)
 
 #%%
