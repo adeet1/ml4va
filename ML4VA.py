@@ -34,7 +34,7 @@ df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM",
 
 # Filter the dataset to only contain crashes from the past two years
 indices = np.where(np.logical_or(df["CRASH_YEAR"] == 2019, df["CRASH_YEAR"] == 2020))[0]
-df_filt = df.iloc[indices, :]
+df_filt = df.iloc[indices, :].reset_index(drop = True)
 
 #%%
 
