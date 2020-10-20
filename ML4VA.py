@@ -56,6 +56,8 @@ X_numerical = X[features["numerical"]]
 X_nominal = X[features["nominal"]]
 X_nominal_missing = np.array(X_nominal.isna()).any(axis = 1)
 X_nominal_missing_indices = np.where(X_nominal_missing)[0]
+
+X.drop(X_nominal_missing_indices, inplace = True)
 X_ordinal.drop(X_nominal_missing_indices, inplace = True)
 X_numerical.drop(X_nominal_missing_indices, inplace = True)
 X_nominal.drop(X_nominal_missing_indices, inplace = True)
