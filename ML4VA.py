@@ -31,63 +31,97 @@ df0 = pd.read_csv("Virginia_Crashes.csv")
 # Drop redundant columns
 df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM", "Node_Info", "X", "Y"], axis = 1)
 
-#%%
-
 # Filter the dataset to only contain crashes from the past two years
 indices = np.where(np.logical_or(df["CRASH_YEAR"] == 2019, df["CRASH_YEAR"] == 2020))[0]
 df_filt = df.iloc[indices, :].reset_index(drop = True)
 
-features = {
-        "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol", "Crash_Severity"],
+variables = {
+        "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol"],
         "nominal" : ["Weather_Condition", "First_Harmful_Event_of_Entire_C", "Collision_Type", "FAC", "FUN", "Light_Condition", "VDOT_District", "Ownership_Used", "Crash_Event_Type_Dsc", "Roadway_Surface_Cond"],
-        "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"]
+        "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"],
+        "target": ["Crash_Severity"]
         }
 
 # Split into X and Y
-X = df_filt[features["ordinal"] + features["nominal"] + features["numerical"]]
-X.drop(["Crash_Severity"], axis = 1, inplace = True)
+X = df_filt[variables["ordinal"] + variables["nominal"] + variables["numerical"]]
 Y = df_filt["Crash_Severity"]
 
-X_ordinal = X[features["ordinal"][:-1]]
-X_numerical = X[features["numerical"]]
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state = 0)
+
+X_train = X_train.reset_index(drop = True)
+X_test = X_test.reset_index(drop = True)
+Y_train = Y_train.reset_index(drop = True)
+Y_test = Y_test.reset_index(drop = True)
+
+X_train_ordinal = X_train[variables["ordinal"]]
+X_train_numerical = X_train[variables["numerical"]]
+X_test_ordinal = X_test[variables["ordinal"]]
+X_test_numerical = X_test[variables["numerical"]]
 
 # Remove any rows with missing values for nominal features
-X_nominal = X[features["nominal"]]
-X_nominal_missing = np.array(X_nominal.isna()).any(axis = 1)
-X_nominal_missing_indices = np.where(X_nominal_missing)[0]
+X_train_nominal = X_train[variables["nominal"]]
+X_train_nominal_missing = np.array(X_train_nominal.isna()).any(axis = 1)
+X_train_nominal_missing_indices = np.where(X_train_nominal_missing)[0]
+X_train.drop(X_train_nominal_missing_indices, inplace = True)
+X_train_ordinal.drop(X_train_nominal_missing_indices, inplace = True)
+X_train_numerical.drop(X_train_nominal_missing_indices, inplace = True)
+X_train_nominal.drop(X_train_nominal_missing_indices, inplace = True)
+Y_train.drop(X_train_nominal_missing_indices, inplace = True)
+del X_train_nominal_missing, X_train_nominal_missing_indices
 
-X.drop(X_nominal_missing_indices, inplace = True)
-X_ordinal.drop(X_nominal_missing_indices, inplace = True)
-X_numerical.drop(X_nominal_missing_indices, inplace = True)
-X_nominal.drop(X_nominal_missing_indices, inplace = True)
-Y.drop(X_nominal_missing_indices, inplace = True)
-del X_nominal_missing, X_nominal_missing_indices
+X_test_nominal = X_test[variables["nominal"]]
+X_test_nominal_missing = np.array(X_test_nominal.isna()).any(axis = 1)
+X_test_nominal_missing_indices = np.where(X_test_nominal_missing)[0]
 
-# Ordinal encoding
-enc1 = OrdinalEncoder()
-X_ordinal_tr = enc1.fit_transform(X_ordinal)
+X_test.drop(X_test_nominal_missing_indices, inplace = True)
+X_test_ordinal.drop(X_test_nominal_missing_indices, inplace = True)
+X_test_numerical.drop(X_test_nominal_missing_indices, inplace = True)
+X_test_nominal.drop(X_test_nominal_missing_indices, inplace = True)
+Y_test.drop(X_test_nominal_missing_indices, inplace = True)
+del X_test_nominal_missing, X_test_nominal_missing_indices
+
+# Ordinal encoding 
+X_train_ordinal_tr = OrdinalEncoder().fit_transform(X_train_ordinal)
+X_test_ordinal_tr = OrdinalEncoder().fit_transform(X_test_ordinal)
 
 # One-hot encoding
 enc2 = OneHotEncoder()
-X_nominal_tr = enc2.fit_transform(X_nominal).toarray()
+X_train_nominal_tr = enc2.fit_transform(X_train_nominal).toarray()
+X_test_nominal_tr = enc2.transform(X_test_nominal).toarray()
 
 # Numerical processing
-imp = SimpleImputer(strategy = "median")
-X_numerical_imp = imp.fit_transform(X_numerical)
+X_train_numerical = SimpleImputer(strategy = "median").fit_transform(X_train_numerical)
+X_test_numerical = SimpleImputer(strategy = "median").fit_transform(X_test_numerical)
 sc = StandardScaler()
-X_numerical_tr = sc.fit_transform(X_numerical_imp)
+X_train_numerical_tr = sc.fit_transform(X_train_numerical)
+X_test_numerical_tr = sc.transform(X_test_numerical)
 
 # Label encoding
-enc3 = LabelEncoder()
-Y_tr = enc3.fit_transform(Y)
+Y_train_tr = LabelEncoder().fit_transform(Y_train)
+Y_test_tr = LabelEncoder().fit_transform(Y_test)
 
 # Concatenate all of the X arrays
-X_tr = np.concatenate((X_numerical_tr, X_ordinal_tr, X_nominal_tr), axis = 1)
+X_train_numerical_tr = pd.DataFrame(X_train_numerical_tr)
+X_train_ordinal_tr = pd.DataFrame(X_train_ordinal_tr)
+X_train_nominal_tr = pd.DataFrame(X_train_nominal_tr)
+X_train_tr = pd.concat((X_train_numerical_tr, X_train_ordinal_tr, X_train_nominal_tr), axis = 1)
 
-X_train, X_test, Y_train, Y_test = train_test_split(X_tr, Y_tr, test_size = 0.2, random_state = 0)
+X_test_numerical_tr = pd.DataFrame(X_test_numerical_tr)
+X_test_ordinal_tr = pd.DataFrame(X_test_ordinal_tr)
+X_test_nominal_tr = pd.DataFrame(X_test_nominal_tr)
+X_test_tr = pd.concat((X_test_numerical_tr, X_test_ordinal_tr, X_test_nominal_tr), axis = 1)
+
+del X_train_numerical, X_train_ordinal, X_train_nominal
+del X_train_numerical_tr, X_train_ordinal_tr, X_train_nominal_tr
+del X_test_numerical, X_test_ordinal, X_test_nominal
+del X_test_numerical_tr, X_test_ordinal_tr, X_test_nominal_tr
+del X_train, X_test, X, Y_train, Y_test, Y
+
+#%%
 
 from sklearn.decomposition import PCA
-pca = PCA().fit(X_train)
+pca = PCA()
+pca.fit(X_train_tr)
 pca_variances = np.cumsum(pca.explained_variance_ratio_)
 plt.figure()
 plt.plot(pca_variances)
@@ -99,13 +133,13 @@ plt.show()
 
 n_pc = np.where(pca_variances >= 0.95)[0][0] + 1
 
-pca = PCA(n_components = n_pc).fit(X_train)
-X_train_pca = pca.transform(X_train)
-X_test_pca = pca.transform(X_test)
+pca = PCA(n_components = n_pc).fit(X_train_tr)
+X_train_pca = pca.transform(X_train_tr)
+X_test_pca = pca.transform(X_test_tr)
 
 #%%
 model = SVC()
-model.fit(X_train_pca, Y_train)
+model.fit(X_train_pca, Y_train_tr)
 
 #%%
 Y_train_pred = model.predict(X_train_pca)
@@ -113,8 +147,8 @@ Y_test_pred = model.predict(X_test_pca)
 
 #%%
 
-metrics_train = [accuracy_score(Y_train, Y_train_pred), precision_score(Y_train, Y_train_pred, average = None), recall_score(Y_train, Y_train_pred, average = None), f1_score(Y_train, Y_train_pred, average = None)]
-metrics_test = [accuracy_score(Y_test, Y_test_pred), precision_score(Y_test, Y_test_pred, average = None), recall_score(Y_test, Y_test_pred, average = None), f1_score(Y_test, Y_test_pred, average = None)]
+metrics_train = [accuracy_score(Y_train_tr, Y_train_pred), precision_score(Y_train_tr, Y_train_pred, average = None), recall_score(Y_train_tr, Y_train_pred, average = None), f1_score(Y_train_tr, Y_train_pred, average = None)]
+metrics_test = [accuracy_score(Y_test_tr, Y_test_pred), precision_score(Y_test_tr, Y_test_pred, average = None), recall_score(Y_test_tr, Y_test_pred, average = None), f1_score(Y_test_tr, Y_test_pred, average = None)]
 
 metrics = {"Training Set": metrics_train, "Testing Set": metrics_test}
 metrics = pd.DataFrame(metrics)
