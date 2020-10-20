@@ -117,9 +117,10 @@ Y_test_pred = model.predict(X_test_pca)
 
 #%%
 
-metrics = {"Training Set": [accuracy_score(Y_train, Y_train), precision_score(Y_train, Y_train), recall_score(Y_train, Y_train), f1_score(Y_train, Y_train)], \
-           "Testing Set": [accuracy_score(Y_test, Y_test), precision_score(Y_test, Y_test), recall_score(Y_test, Y_test), f1_score(Y_test, Y_test)]}
+metrics_train = [accuracy_score(Y_train, Y_train_pred), precision_score(Y_train, Y_train_pred, average = None), recall_score(Y_train, Y_train_pred, average = None), f1_score(Y_train, Y_train_pred, average = None)]
+metrics_test = [accuracy_score(Y_test, Y_test_pred), precision_score(Y_test, Y_test_pred, average = None), recall_score(Y_test, Y_test_pred, average = None), f1_score(Y_test, Y_test_pred, average = None)]
 
+metrics = {"Training Set": metrics_train, "Testing Set": metrics_test}
 metrics = pd.DataFrame(metrics)
 metrics.index = ["Accuracy", "Precision", "Recall", "F1 Score"]
 print(metrics)
