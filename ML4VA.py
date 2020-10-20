@@ -99,7 +99,9 @@ plt.show()
 
 #%%
 
-pca = PCA(n_components = 63).fit(X_train)
+n_pc = np.where(pca_variances >= 0.95)[0][0] + 1
+
+pca = PCA(n_components = n_pc).fit(X_train)
 X_train_pca = pca.transform(X_train)
 X_test_pca = pca.transform(X_test)
 
