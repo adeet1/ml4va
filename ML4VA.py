@@ -85,7 +85,7 @@ X_train_ordinal_tr = OrdinalEncoder().fit_transform(X_train_ordinal)
 X_test_ordinal_tr = OrdinalEncoder().fit_transform(X_test_ordinal)
 
 # One-hot encoding
-enc2 = OneHotEncoder()
+enc2 = OneHotEncoder(drop = "first")
 X_train_nominal_tr = enc2.fit_transform(X_train_nominal).toarray()
 X_test_nominal_tr = enc2.transform(X_test_nominal).toarray()
 
