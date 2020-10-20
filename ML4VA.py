@@ -18,8 +18,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 
 np.random.seed(0)
 
@@ -37,8 +39,8 @@ df_filt = df.iloc[indices, :].reset_index(drop = True)
 
 variables = {
         "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol"],
-        "nominal" : ["Weather_Condition", "First_Harmful_Event_of_Entire_C", "Collision_Type", "FAC", "FUN", "Light_Condition", "VDOT_District", "Ownership_Used", "Crash_Event_Type_Dsc", "Roadway_Surface_Cond"],
-        "numerical": ["Rns_Mp", "K_People", "A_People", "B_People", "C_People", "LATITUDE", "LONGITUDE", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"],
+        "nominal" : ["Weather_Condition", "Collision_Type", "FAC", "Ownership_Used", "Roadway_Surface_Cond"],
+        "numerical": ["Rns_Mp", "VSP", "SYSTEM", "OWNERSHIP", "Carspeedlimit", "Crash_Military_Tm"],
         "target": ["Crash_Severity"]
         }
 
@@ -117,7 +119,6 @@ del X_test_numerical, X_test_ordinal, X_test_nominal
 del X_test_numerical_tr, X_test_ordinal_tr, X_test_nominal_tr
 del X_train, X_test, X, Y_train, Y_test, Y
 
-#%%
 from sklearn.decomposition import PCA
 pca = PCA()
 pca.fit(X_train_tr)
@@ -134,15 +135,12 @@ pca = PCA(n_components = n_pc).fit(X_train_tr)
 X_train_pca = pca.transform(X_train_tr)
 X_test_pca = pca.transform(X_test_tr)
 
-#%%
-model = SVC()
+model = KNeighborsClassifier()
 model.fit(X_train_pca, Y_train_tr)
 
-#%%
 Y_train_pred = model.predict(X_train_pca)
 Y_test_pred = model.predict(X_test_pca)
 
-#%%
 acc_train = accuracy_score(Y_train_tr, Y_train_pred)
 prec_train = precision_score(Y_train_tr, Y_train_pred, average = None)
 recall_train = recall_score(Y_train_tr, Y_train_pred, average = None)
@@ -170,64 +168,3 @@ print(metrics)
 # Need to see if every city in Virginia has a corresponding VDOT_District
 # Need to choose between one of: Physical_Juris, Plan_District, VDOT_District
 # Need to choose between one of: FUN, Rte_Category_Cd
-
-#print(df["Crash_Dt"].value_counts())
-print("")
-#print(df["Time_Slicing"].value_counts())
-print("")
-#print(df["Weather_Condition"].value_counts())
-print("")
-#print(df["First_Harmful_Event_of_Entire_C"].value_counts())
-print("")
-#print(df["Speed_Notspeed"].value_counts())
-print("")
-#print(df["Belted_Unbelted"].value_counts())
-print("")
-#print(df["Alcohol_Notalcohol"].value_counts())
-print("")
-print(df["Rd_Type"].value_counts())
-print("")
-#print(df["Collision_Type"].value_counts())
-#print("")
-print(df["Vehicle_Body_Type_Cd"].value_counts())
-print("")
-print(df["Driver_Action_Type_Cd"].value_counts())
-print("")
-#print(df["Crash_Severity"].value_counts())
-print("")
-print(df["CRASH_YEAR"].value_counts())
-print("")
-#print(df["FAC"].value_counts())
-print("")
-#print(df["FUN"].value_counts())
-print("")
-#print(df["Light_Condition"].value_counts())
-print("")
-#print(df["VDOT_District"].value_counts())
-print("")
-#print(df["Ownership_Used"].value_counts())
-print("")
-#print(df["Physical_Juris"].value_counts())
-print("")
-print(df["Plan_District"].value_counts())
-print("")
-print(df["Crash_Event_Type_Dsc"].value_counts())
-print("")
-print(df["Rte_Category_Cd"].value_counts())
-print("")
-print(df["Roadway_Surface_Cond"].value_counts())
-print("")
-print(df["Drivergen"].value_counts())
-print("")
-print(df["Driverinjurytype"].value_counts())
-print("")
-print(df["Pedgen"].value_counts())
-print("")
-print(df["Pedinjurytype"].value_counts())
-print("")
-print(df["Passgen"].value_counts())
-print("")
-print(df["Passinjurytype"].value_counts())
-
-#%%
-
