@@ -16,13 +16,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 np.random.seed(0)
 
+#%%
 df0 = pd.read_csv("Virginia_Crashes.csv")
 
 #%%
@@ -35,8 +36,6 @@ df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM",
 # Filter the dataset to only contain crashes from the past two years
 indices = np.where(np.logical_or(df["CRASH_YEAR"] == 2019, df["CRASH_YEAR"] == 2020))[0]
 df_filt = df.iloc[indices, :].reset_index(drop = True)
-
-#%%
 
 features = {
         "ordinal" : ["Time_Slicing", "Speed_Notspeed", "Belted_Unbelted", "Alcohol_Notalcohol", "Crash_Severity"],
@@ -64,29 +63,28 @@ X_nominal.drop(X_nominal_missing_indices, inplace = True)
 Y.drop(X_nominal_missing_indices, inplace = True)
 del X_nominal_missing, X_nominal_missing_indices
 
-#%%
 # Ordinal encoding
 enc1 = OrdinalEncoder()
 X_ordinal_tr = enc1.fit_transform(X_ordinal)
 
-#%%
 # One-hot encoding
 enc2 = OneHotEncoder()
 X_nominal_tr = enc2.fit_transform(X_nominal).toarray()
 
-#%%
 # Numerical processing
 imp = SimpleImputer(strategy = "median")
 X_numerical_imp = imp.fit_transform(X_numerical)
 sc = StandardScaler()
 X_numerical_tr = sc.fit_transform(X_numerical_imp)
 
-#%%
+# Label encoding
+enc3 = LabelEncoder()
+Y_tr = enc3.fit_transform(Y)
 
 # Concatenate all of the X arrays
 X_tr = np.concatenate((X_numerical_tr, X_ordinal_tr, X_nominal_tr), axis = 1)
 
-X_train, X_test, Y_train, Y_test = train_test_split(X_tr, Y, test_size = 0.2, random_state = 0)
+X_train, X_test, Y_train, Y_test = train_test_split(X_tr, Y_tr, test_size = 0.2, random_state = 0)
 
 from sklearn.decomposition import PCA
 pca = PCA().fit(X_train)
@@ -111,8 +109,6 @@ model.fit(X_train_pca, Y_train)
 
 #%%
 Y_train_pred = model.predict(X_train_pca)
-
-#%%
 Y_test_pred = model.predict(X_test_pca)
 
 #%%
