@@ -35,12 +35,27 @@ from sklearn.linear_model import LogisticRegression
 
 np.random.seed(0)
 
+from google.colab import drive
+drive.mount('/content/drive')
+filepath = "drive/My Drive/Documents/Education/University - 1 - UVA/Coursework - 6 - 2020 Fall/CS 4774 Machine Learning/ML4VA Project/ml4va"
+
 # Import data
-df0 = pd.read_csv("Virginia_Crashes.csv")
+df0 = pd.read_csv(filepath + "/Virginia_Crashes.csv")
 df0.head()
 
 # Shape of original dataset
 df0.shape
+
+#Generate interactive geographic plot of Crashes in Virginia
+import plotly.express as px
+df20 = df0[(df0.CRASH_YEAR == 2019) | (df0.CRASH_YEAR == 2020)]
+
+fig = px.scatter_mapbox(df20, lat='LATITUDE', lon='LONGITUDE', 
+                        color='Crash_Severity', zoom=5.5,
+                        hover_name='VDOT_District',hover_data=['Weather_Condition','Collision_Type','Rte_Nm']
+                       )
+fig.update_layout(mapbox_style="open-street-map")
+fig.show()
 
 # Drop redundant columns
 df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM", "Node_Info", "X", "Y"], axis = 1)
@@ -48,6 +63,31 @@ df = df0.drop(["OBJECTID", "Document_Nbr", "Rte_Nm", "Local_Case_Cd", "DIAGRAM",
 # Filter the dataset to only contain crashes from the past two years
 indices = np.where(np.logical_or(df["CRASH_YEAR"] == 2019, df["CRASH_YEAR"] == 2020))[0]
 df_filt = df.iloc[indices, :].reset_index(drop = True)
+
+# Compare shapes of original and filtered dataset
+print(df.shape, "-->", df_filt.shape)
+
+# Commented out IPython magic to ensure Python compatibility.
+#Distributions of dataset features
+# %matplotlib inline
+import matplotlib.pyplot as plt
+df_filt.hist(bins=12, figsize=(15, 10))
+plt.show()
+
+# Distribution of classes
+dist = df_filt["Crash_Severity"].value_counts(ascending = False) / df_filt["Crash_Severity"].size
+pd.DataFrame(dist)
+
+plt.pie(dist, labels = dist.index, radius = 2)
+plt.show()
+
+#Scatter matrix of particular features in data
+from pandas.plotting import scatter_matrix
+
+attributes = ["Pedage", "Passage", "LATITUDE",
+              "LONGITUDE", "VSP"]
+scatter_matrix(df_filt[attributes], figsize=(12, 8))
+plt.show()
 
 # A dictionary containing variable names by type
 variables = {
@@ -68,6 +108,15 @@ X_train = X_train.reset_index(drop = True)
 X_test = X_test.reset_index(drop = True)
 Y_train = Y_train.reset_index(drop = True)
 Y_test = Y_test.reset_index(drop = True)
+
+print(X_train.shape)
+print(Y_train.shape)
+print(X_test.shape)
+print(Y_test.shape)
+
+pd.Series(Y_train).value_counts().sort_values(ascending = False) / Y_train.size
+
+pd.Series(Y_test).value_counts().sort_values(ascending = False) / Y_test.size
 
 # Split into ordinal and numerical sets
 X_train_ordinal = X_train[variables["ordinal"]]
@@ -125,6 +174,16 @@ label_map = {"PDO.Property Damage Only" : 0,
 Y_train_tr = Y_train.replace(label_map)
 Y_test_tr = Y_test.replace(label_map)
 
+# Compare array shapes before and after encoding
+print("X_train:", X_train.shape, "-->", X_train_tr.shape)
+print("Y_train:", Y_train.shape)
+print("X_test:", X_test.shape, "-->", X_test_tr.shape)
+print("Y_test:", Y_test.shape)
+
+pd.Series(Y_train_tr).value_counts().sort_values(ascending = False) / Y_train_tr.size
+
+pd.Series(Y_test_tr).value_counts().sort_values(ascending = False) / Y_test_tr.size
+
 # Visualize PCA for various numbers of principal components
 pca = PCA()
 pca.fit(X_train_tr)
@@ -141,6 +200,12 @@ pca = PCA(n_components = n_pc).fit(X_train_tr)
 X_train_pca = pca.transform(X_train_tr)
 X_test_pca = pca.transform(X_test_tr)
 
+# Compare array shapes before and after PCA
+print("X_train:", X_train_tr.shape, "-->", X_train_pca.shape)
+print("Y_train:", Y_train_tr.shape)
+print("X_test:", X_test_tr.shape, "-->", X_test_pca.shape)
+print("Y_test:", Y_test_tr.shape)
+
 # Number of classes
 n_classes = np.unique(Y_train_tr).size
 n_classes
@@ -151,6 +216,12 @@ model.fit(X_train_pca, Y_train_tr)
 # Make predictions
 Y_train_pred = model.predict(X_train_pca)
 Y_test_pred = model.predict(X_test_pca)
+
+# Confusion matrix for training set
+pd.DataFrame(confusion_matrix(Y_train_pred, Y_train_tr))
+
+# Confusion matrix for testing set
+pd.DataFrame(confusion_matrix(Y_test_pred, Y_test_tr))
 
 # Calculate metrics for training set
 acc_train = accuracy_score(Y_train_tr, Y_train_pred)
